@@ -1,5 +1,5 @@
 5a:57:74:87:aa:ef // MAIN Controller 01
-8c:25:b4:c9:4d:2b // MAIN Controller 02
-dc:1a:4d:2b:d5:4e // Control Panel
-04:63:ec:4f:1a:f8 // REMOTE Controller 01 (Front Apron)
-96:af:fe:32:57:31 // REMOTE Controller 02 (Future use)
+8c:25:b4:c9:4d:2b // REMOTE Controller 01 (Left Yard)
+dc:1a:4d:2b:d5:4e // REMOTE Controller 02 (Scary Terry)
+04:63:ec:4f:1a:f8 // REMOTE Controller 03 (Front Apron)
+96:af:fe:32:57:31 // (Future use)
