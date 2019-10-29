@@ -76,17 +76,17 @@ void setup(void)
   // Init variables and expose them to REST API
   pirdrivewaytop = 0;
   pirdrivewaybottom = 0;
-//  rest.variable("pirdrivewaytop",&pirdrivewaytop);
- // rest.variable("pirdrivewaybottom",&pirdrivewaybottom);
+  rest.variable("pirdrivewaytop",&pirdrivewaytop);
+  rest.variable("pirdrivewaybottom",&pirdrivewaybottom);
 
   // Function to be exposed
- // rest.function("pirdisable",pirdisable);
- // rest.function("triggeralarmlight",triggeralarmlight);
-  //rest.function("triggerhorn",triggerhorn);
+  rest.function("pirdisable",pirdisable);
+  rest.function("triggeralarmlight",triggeralarmlight);
+  rest.function("triggerhorn",triggerhorn);
 
   // Give name & ID to the device (ID should be 6 characters long)
-  //rest.set_id("001");
-  //rest.set_name("remote_control");
+  rest.set_id("001");
+  rest.set_name("remote_control");
 
   /////////////////
   // PIN CONFIG  //
@@ -106,27 +106,27 @@ void setup(void)
   pinMode(PIR_2, INPUT);
 
   // Start the Ethernet connection and the server
-  //if (Ethernet.begin(mac) == 0) {
-  //  Serial.println("Failed to configure Ethernet using DHCP");
+  if (Ethernet.begin(mac) == 0) {
+    Serial.println("Failed to configure Ethernet using DHCP");
     // no point in carrying on, so do nothing forevermore:
     // try to congifure using IP address instead of DHCP:
-   // Ethernet.begin(mac, ip);
-  //}
-  //server.begin();
+    Ethernet.begin(mac, ip);
+  }
+  server.begin();
   Serial.print("server is at ");
   Serial.println(Ethernet.localIP());
 
   // Start watchdog
-  //wdt_enable(WDTO_4S);
+  wdt_enable(WDTO_4S);
 }
 
 void loop() {
 
   currentMillis = millis();
   // listen for incoming clients
-  //EthernetClient client = server.available();
-  //rest.handle(client);
-  //wdt_reset();
+  EthernetClient client = server.available();
+  rest.handle(client);
+  wdt_reset();
 
   byte pir1 = digitalRead(PIR_1);
   byte pir2 = digitalRead(PIR_2);
@@ -151,20 +151,20 @@ void lightning() {
   
   if(currentMillis >= timeuntillightning)
   {
-    Serial.print("Execute lig");
+    //Serial.print("Execute lig");
     if(numflashes <= 0)
     {
-      Serial.print("numflash ");
+      //Serial.print("numflash ");
       numflashes = flashCount;
     }
     else
     {
       if(lightningState == LOW)
       {
-          Serial.print("Lightning low");
+          //Serial.print("Lightning low");
         if(currentMillis >= timeuntilnextflash)
         {
-            Serial.print("Lightning ON");
+            //Serial.print("Lightning ON");
           analogWrite(MOSSFET_1, random(flashBrightnessMin, flashBrightnessMax));
           lightningState = HIGH;
 
@@ -173,11 +173,11 @@ void lightning() {
       }
       else
       {
-          Serial.print("Lightning HIGH");
+          //Serial.print("Lightning HIGH");
         if(currentMillis >= flashduration)
         {
-            Serial.print("Lightning OFF");
-          analogWrite(MOSSFET_1, 0);
+            //Serial.print("Lightning OFF");
+          analogWrite(MOSSFET_1, 50);
           lightningState = LOW;
           numflashes--;
           if(numflashes > 0)
