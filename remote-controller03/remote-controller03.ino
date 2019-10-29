@@ -62,10 +62,15 @@ unsigned long previousLedMillis = 0;
 bool barrelactive = false;
 bool terryactive = false;
 bool terryfadein = false;
+bool piractive = true;
 int terryfadelevel = 0;
 
 // Barrel Variables
-
+unsigned long barreldelay = 0;
+unsigned long activeduration = 0;
+unsigned long timeuntilnextactive = 0;
+int numactive = 0;
+byte barrelState = LOW;
 
 // Lightning Variables
 unsigned long timeuntillightning = 0;
@@ -139,7 +144,7 @@ void loop() {
   wdt_reset();
 
   byte pir1 = digitalRead(PIR_1);
-
+  //digitalWrite(RELAY_2, digitalRead(PIR_1));
   barrellogic(pir1);
   
   terrylighting();
@@ -280,17 +285,88 @@ void barrellighting() {
   }
 }
 
-void barrellogic() {
-  if(
+void barrellogic(byte pir) {
+  if(barrelactive)
+  {
+    int activateCount = random (4, 10);    
+  
+    int activateDurationMin = 1;               
+    int activateDurationMax = 750;           
+  
+    int nextActivateDelayMin = 1;              
+    int nextActivateDelayMax = 500;
+
+    if(numactive <= 0)
+    {
+      //Serial.print("numflash ");
+      numactive = activateCount;
+    }
+    else
+    {
+      if(barrelState == LOW)
+      {
+          //Serial.print("Lightning low");
+        if(currentMillis >= timeuntilnextactive)
+        {
+            //Serial.print("Lightning ON");
+          digitalWrite(RELAY_1, HIGH);
+          barrelState = HIGH;
+
+          activeduration = random(activateDurationMin, activateDurationMax) + currentMillis;
+        }
+      }
+      else
+      {
+          //Serial.print("Lightning HIGH");
+        if(currentMillis >= activeduration)
+        {
+            //Serial.print("Lightning OFF");
+          digitalWrite(RELAY_1, LOW);
+          barrelState = LOW;
+          numactive--;
+          if(numactive > 0)
+          {
+            timeuntilnextactive = random(nextActivateDelayMin, nextActivateDelayMax) + currentMillis;
+          }
+          else
+          {
+            barreldelay = 25000 + currentMillis;
+            barrelactive = false;
+          }
+        }
+      }
+      
+    }
+  }
+  else
+  {
+    if(currentMillis >= barreldelay)
+    {
+      if(piractive)
+      {
+        if(pir == HIGH)
+        {
+          barrelactive = true;
+        }
+      }
+    }
+  }
 }
 // Disable PIR's for 10s
 int pirdisable(String command) {
 
   // Get state from command
-  //int state = command.toInt();
+  int state = command.toInt();
 
-  //digitalWrite(6,state);
-  //return 1;
+  if(state)
+  {
+    piractive = true;
+  }
+  else
+  {
+    piractive = false;
+  }
+  return 1;
 
 }
 // Trigger Electrical box alarm light
