@@ -216,7 +216,6 @@ void barrellighting() {
         {
             //Serial.print("Lightning ON");
           analogWrite(MOSSFET_2, random(flashBrightnessMin, flashBrightnessMax));
-          analogWrite(MOSSFET_3, random(flashBrightnessMin, flashBrightnessMax));
           lightningState = HIGH;
 
           flashduration = random(flashDurationMin, flashDurationMax) + currentMillis;
