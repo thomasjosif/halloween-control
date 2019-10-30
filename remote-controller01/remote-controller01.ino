@@ -1,5 +1,5 @@
 /*
-  Halloween Remote Controller 02
+  Halloween Remote Controller 01
   Copyright (C) 2019 Thomas Dick <thomasjosif@outlook.com>
 
   Using aRest by Marco Schwartz <https://github.com/marcoschwartz/aREST/>
@@ -14,14 +14,14 @@
 #include <SoftwareSerial.h>
 #include <DFRobotDFPlayerMini.h>
 
-// Enter a MAC address for your controller below.
-byte mac[] = { 0xDC, 0x1A, 0x4D, 0x2B, 0xD5, 0x4D };
+// Enter a MAC adCdress for your controller below.
+byte mac[] = { 0x8C, 0x25, 0xB4, 0xC9, 0x4D, 0x2B };
 
 // IP address in case DHCP fails
 IPAddress ip(192,168,0,21);
 
 char serveraddr = "192.168.1.110";
-byte myserver[] = { 192, 168, 1, 112 }; // zoomkat web page server IP address
+byte myserver[] = { 192, 168, 1, 20 }; // zoomkat web page server IP address
 
 
 // Ethernet comms
@@ -68,9 +68,9 @@ unsigned long previousLedMillis = 0;
 unsigned long spookylightingdelay = 0;
 unsigned long terrydelay = 0;
 bool spookylighting = false;
-bool skullactive = false;
-bool terryactive = false;
+bool hornactive = false;
 bool piractive = true;
+bool electricalactive = false;
 
 // Lightning Variables
 unsigned long timeuntillightning = 0;
@@ -87,11 +87,15 @@ int numflashes1 = 0;
 byte lightningState1 = LOW;
 
 // Barrel Variables
-unsigned long skulldelay = 0;
-unsigned long activeduration = 0;
-unsigned long timeuntilnextactive = 0;
-int numactive = 0;
-byte skullState = LOW;
+unsigned long electricaldelay = 0;
+unsigned long redlightoffdelay = 0;
+unsigned long firecrackerdelay = 0;
+unsigned long lastlightdelay = 0;
+byte alarmlightstate = LOW;
+
+unsigned long horntime = 0;
+unsigned long horndelay = 0;
+
 
 
 //void http_communicate_send(String ip, 
@@ -162,9 +166,9 @@ void loop() {
   byte pir2 = digitalRead(PIR_2);
   //digitalWrite(RELAY_3, !pir1);
   //digitalWrite(RELAY_4, !pir2);
-  //ambientlighting();
-  //skulllogic(pir1);
-  //terrylogic(pir2);
+  ambientlighting();
+  electricallogic(pir1);
+  hornlogic(pir2);
   lightning();
 
   // check for serial input
@@ -262,68 +266,52 @@ void ambientlighting() {
   
 }
 
-void skulllogic(byte pir) {
-  if(skullactive)
+
+
+void electricallogic(byte pir) {
+  if(electricalactive)
   {
-    int activateCount = random (4, 10);    
-  
-    int activateDurationMin = 1;               
-    int activateDurationMax = 750;           
-  
-    int nextActivateDelayMin = 1;              
-    int nextActivateDelayMax = 500;
-
-    if(numactive <= 0)
+    if(currentMillis >= firecrackerdelay)
     {
-      //Serial.print("numflash ");
-      numactive = activateCount;
+      electricalactive = false;
+      http_electrical_alarm(0);
+      http_electrical_firecracker(1);
+      digitalWrite(RELAY_2, HIGH);
+      redlightoffdelay = currentMillis + 2000;
+      electricaldelay = currentMillis + 8000;
     }
-    else
-    {
-      if(skullState == LOW)
-      {
-          //Serial.print("Lightning low");
-        if(currentMillis >= timeuntilnextactive)
-        {
-            //Serial.print("Lightning ON");
-          digitalWrite(RELAY_1, HIGH);
-          skullState = HIGH;
 
-          activeduration = random(activateDurationMin, activateDurationMax) + currentMillis;
-        }
-      }
-      else
-      {
-          //Serial.print("Lightning HIGH");
-        if(currentMillis >= activeduration)
+    if(currentMillis >= lastlightdelay)
+    {
+        if(alarmlightstate == HIGH)
         {
-            //Serial.print("Lightning OFF");
-          digitalWrite(RELAY_1, LOW);
-          skullState = LOW;
-          numactive--;
-          if(numactive > 0)
-          {
-            timeuntilnextactive = random(nextActivateDelayMin, nextActivateDelayMax) + currentMillis;
-          }
-          else
-          {
-            skulldelay = 25000 + currentMillis;
-            skullactive = false;
-          }
+          lastlightdelay = currentMillis + 750;
+          digitalWrite(RELAY_1, LOW);    
+          alarmlightstate = LOW;
         }
-      }
-      
+        else
+        {
+          lastlightdelay = currentMillis + 750;
+          digitalWrite(RELAY_1, HIGH);
+          alarmlightstate = HIGH;
+        }
     }
   }
   else
   {
-    if(currentMillis >= skulldelay)
+    if(currentMillis >= redlightoffdelay)
+    {
+      digitalWrite(RELAY_2, LOW);
+    }
+    if(currentMillis >= electricaldelay)
     {
       if(piractive)
       {
         if(pir == HIGH)
         {
-          skullactive = true;
+          electricalactive = true;
+          http_electrical_alarm(1);
+          firecrackerdelay = currentMillis + 3000;
         }
       }
     }
@@ -331,47 +319,70 @@ void skulllogic(byte pir) {
 }
 
 
-void terrylogic(byte pir) {
-  if(terryactive)
+void hornlogic(byte pir) {
+  if(hornactive)
   {
-    // If no file is currently being played
+    digitalWrite(RELAY_3, HIGH);
+    if(currentMillis >= horntime)
+    {
+      digitalWrite(RELAY_3, LOW);
+      hornactive = false;
+      horndelay = currentMillis + 4000;
+    }
   }
   else 
   {
-    if(currentMillis >= terrydelay)
+    digitalWrite(RELAY_3, LOW);
+    if(currentMillis >= horndelay)
     {
       if(piractive)
       {
         if(pir == HIGH)
         {
-          activateterry();
+          hornactive = true;
+          horntime = currentMillis + 1500;
         }
       }
     }
   }
 }
 
-void activateterry()
-{
-  terryactive = true;
-  http_terrylight(1);
-}
-
-void deactivateterry()
-{
-  terryactive = true;
-  http_terrylight(0);
-  terrydelay = random(8000, 10000) + currentMillis;
-}
-
-
-void http_terrylight(int value) {
+void http_electrical_alarm(int value) {
   if (ethclient.connect(myserver, 80)) {  //starts client connection, checks for connection
     Serial.println("connected");
     if(value) {
-      ethclient.println("POST /triggerterrylight?state=1 HTTP/1.0"); //download text
+      ethclient.println("POST /triggerelectricalalarm?state=1 HTTP/1.0"); //download text
     } else {
-      ethclient.println("POST /triggerterrylight?state=0 HTTP/1.0"); //download text
+      ethclient.println("POST /triggerelectricalalarm?state=0 HTTP/1.0"); //download text
+    }
+    
+    ethclient.println(); //end of get request
+  }
+  else {
+    Serial.println("connection failed"); //error message if no client connect
+    Serial.println();
+  }
+
+  while(ethclient.connected() && !ethclient.available()) delay(1); //waits for data
+  while (ethclient.connected() || ethclient.available()) { //connected or data available
+    char c = ethclient.read(); //gets byte from ethernet buffer
+    Serial.print(c); //prints byte to serial monitor
+  }
+
+  Serial.println();
+  Serial.println("disconnecting.");
+  Serial.println("==================");
+  Serial.println();
+  ethclient.stop(); //stop client
+}
+
+void http_electrical_firecracker(int value) {
+  if (ethclient.connect(myserver, 80)) {  //starts client connection, checks for connection
+    Serial.println("connected");
+    if(value) {
+      ethclient.println("POST /triggerelectricalfirecrackers?state=1 HTTP/1.0"); //download text
+    } else {
+      ethclient.println("POST /triggerelectricalfirecrackers?state=0 HTTP/1.0"); //download text
     }
     
     ethclient.println(); //end of get request
@@ -482,11 +493,16 @@ int triggerelectrical(String command) {
   int state = command.toInt();
   if(state)
   {
-    activateterry();
+          electricalactive = true;
+          http_electrical_alarm(1);
+          firecrackerdelay = currentMillis + 3000;
   }
   else
   {
-    deactivateterry();
+          electricalactive = false;
+          http_electrical_alarm(0);
+          http_electrical_firecracker(0);
+          electricaldelay = currentMillis + 8000;
   }
   return 1;
 
@@ -499,11 +515,13 @@ int triggerhorn(String command) {
 
   if(state)
   {
-    skullactive = true;
+    hornactive = true;
+    horntime = currentMillis + 1500;
   }
   else
   {
-    skullactive = false;
+    hornactive = false;
+    horndelay = currentMillis + 4000;
   }
   return 1;
 
