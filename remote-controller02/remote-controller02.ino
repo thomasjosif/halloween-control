@@ -21,7 +21,7 @@ byte mac[] = { 0xDC, 0x1A, 0x4D, 0x2B, 0xD5, 0x4D };
 IPAddress ip(192,168,0,22);
 
 char serveraddr = "192.168.1.110";
-byte myserver[] = { 192, 168, 1, 112 }; // zoomkat web page server IP address
+byte myserver[] = { 192, 168, 0, 23 }; // zoomkat web page server IP address
 
 
 // Ethernet comms
@@ -200,11 +200,11 @@ void loop() {
 void sendGET() //client function to send/receive GET request data.
 {
 
-
+Serial.print("test");
 }
 
 void ambientlighting() {
-
+  //Serial.print("ambient");
   int flashCount = random (15, 45);        // Min. and max. number of flashes each loop
   int flashBrightnessMin =  25;           // LED flash min. brightness (0-255)
   int flashBrightnessMax =  200;          // LED flash max. brightness (0-255)
@@ -359,10 +359,11 @@ void skulllogic(byte pir) {
 void terrylogic(byte pir) {
   if(terryactive)
   {
+    delay(1500);
     // If no file is currently being played
     if(digitalRead(DF_BUSY) == HIGH)
     {
-      deactivateterry();
+     deactivateterry();
     }
   }
   else 
@@ -384,12 +385,12 @@ void activateterry()
 {
   terryactive = true;
   http_terrylight(1);
-  myDFPlayer.playMp3Folder(random(1, 3));
+  myDFPlayer.playMp3Folder(1);
 }
 
 void deactivateterry()
 {
-  terryactive = true;
+  terryactive = false;
   http_terrylight(0);
   myDFPlayer.pause();
   terrydelay = random(8000, 10000) + currentMillis;
